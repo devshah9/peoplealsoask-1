@@ -7,12 +7,10 @@ from requests import request
 import http.client
 
 
-
 conn = http.client.HTTPSConnection("api.scrapingant.com")
 
 
-scrapDataDict= {}
-
+scrapDataDict = {}
 
 
 pixaBayList = []
@@ -21,56 +19,52 @@ unSplashList = []
 googleImagesList = []
 searchVideoList = []
 
+
 def parse_search_results(soup):
 
     results = []
-    for i in soup.find_all('div',{'class': 'g'}):
+    for i in soup.find_all('div', {'class': 'g'}):
         title = i.find('h3', {'class': 'LC20lb MBeuO DKV0Md'})
         url = i.find('a')
         if title and url:
-            results.append({'title':title.text, 'url':url['href']})
+            results.append({'title': title.text, 'url': url['href']})
     return results
 
 
-def scrape_video_search(query: str, page=1, country="US"):
+def scrape_video_search(query: str):
     try:
         """scrape image results for a given keyword"""
         url = f'https://www.youtube.com/results?search_query={query}'
-        
+
         url = str(quote(url)).replace('/', '%2F')
 
-    
-        conn.request("GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
-
-    
+        conn.request(
+            "GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
 
         res = conn.getresponse()
         data = res.read()
-    
+
         soup = BeautifulSoup(data.decode("utf-8"), "html.parser")
 
-
-
-
-    
         results = soup.select("script")
-        
+
         for div in results:
             if str(div.text).startswith('var ytInitialData'):
                 youtube_urls = []
                 json_object = json.loads(str(div.text)[20:-1])
-                new_list = json_object['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
+                new_list = json_object['contents']['twoColumnSearchResultsRenderer']['primaryContents'][
+                    'sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
                 for i in new_list:
                     if 'videoRenderer' in i:
                         title = i['videoRenderer']['title']['runs'][0]['text']
                         url_id = i['videoRenderer']['videoId']
                         url = 'https://www.youtube.com/watch?v=' + url_id
-                        youtube_urls.append({'title':title, 'url':url})
-        print(youtube_urls)
+                        youtube_urls.append({'title': title, 'url': url})
         return youtube_urls
     except Exception as e:
         print(e)
         return youtube_urls
+
 
 def parse_people_also_ask(soup):
     new_list = []
@@ -78,6 +72,7 @@ def parse_people_also_ask(soup):
 
         new_list.append({'que': i.get_text(strip=True), 'ans': ''})
     return new_list
+
 
 def apiCaller(url, headers):
     return json.loads(request("GET", url, headers=headers, data={}).text)
@@ -97,7 +92,6 @@ def apiPixaBayCom(keyWord):
             pixaBayList.append(apiResponse['hits'][1].get('largeImageURL', ''))
     except Exception as e:
         print(e)
-
 
 
 def apiPexelsCom(keyWord):
@@ -124,42 +118,40 @@ def googleImages(query):
     url = f"https://www.google.com/search?hl=en&q={query}&source=lnms&tbm=isch"
     url = str(quote(url)).replace('/', '%2F')
 
-    
-    conn.request("GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
-
-    
+    conn.request(
+        "GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
 
     res = conn.getresponse()
     data = res.read()
-    
+
     soup = BeautifulSoup(data.decode("utf-8"), "lxml")
     all_script_tags = soup.select("script")
     # https://regex101.com/r/eteSIT/1
-    matched_images_data = "".join(re.findall(r"AF_initDataCallback\(([^<]+)\);", str(all_script_tags)))
+    matched_images_data = "".join(re.findall(
+        r"AF_initDataCallback\(([^<]+)\);", str(all_script_tags)))
     matched_images_data_fix = json.dumps(matched_images_data)
     matched_images_data_json = json.loads(matched_images_data_fix)
-    
+
     # https://regex101.com/r/VPz7f2/1
-    matched_google_image_data = re.findall(r'\"b-GRID_STATE0\"(.*)sideChannel:\s?{}}', matched_images_data_json)
+    matched_google_image_data = re.findall(
+        r'\"b-GRID_STATE0\"(.*)sideChannel:\s?{}}', matched_images_data_json)
 
     removed_matched_google_images_thumbnails = re.sub(
-            r'\[\"(https\:\/\/encrypted-tbn0\.gstatic\.com\/images\?.*?)\",\d+,\d+\]', "", str(matched_google_image_data))
+        r'\[\"(https\:\/\/encrypted-tbn0\.gstatic\.com\/images\?.*?)\",\d+,\d+\]', "", str(matched_google_image_data))
 
-    matched_google_full_resolution_images = re.findall(r"(?:'|,),\[\"(https:|http.*?)\",\d+,\d+\]", removed_matched_google_images_thumbnails)
+    matched_google_full_resolution_images = re.findall(
+        r"(?:'|,),\[\"(https:|http.*?)\",\d+,\d+\]", removed_matched_google_images_thumbnails)
 
     googleImagesList = [
-            bytes(bytes(img, "ascii").decode("unicode-escape"), "ascii").decode("unicode-escape") for img in matched_google_full_resolution_images
+        bytes(bytes(img, "ascii").decode("unicode-escape"), "ascii").decode("unicode-escape") for img in matched_google_full_resolution_images
     ]
 
-    
     img_tags = soup.find_all('img')
     img_urls = [img.get('data-src', None) for img in img_tags]
-    
+
     # Print the URLs of the images
     for url in list(filter(None, img_urls)):
         googleImagesList.append(url)
-    
-
 
 
 def parse_related_search(soup):
@@ -168,9 +160,9 @@ def parse_related_search(soup):
     related_search = soup.find('div', {'class': 'y6Uyqe'})
     a = related_search.find_all('a')
     for i in a:
-        print(i.text)
         results.append(i.text)
     return results
+
 
 def apiUnSplashCom(keyWord):
     global unSplashList
@@ -186,8 +178,6 @@ def apiUnSplashCom(keyWord):
             unSplashList.append(apiResponse['results'][1]['urls']['regular'])
     except Exception as e:
         print(e)
-
-
 
 
 def mainScraper(keyWordList, numOfTimes, relatedKeyWord, pixaBayKeyWord, pexelKeyWord, unSplashKeyWord, googleKeyWord,
@@ -215,7 +205,6 @@ def scraper(key_word, numOfTimes, relatedKeyWord, pixaBayKeyWord, pexelKeyWord, 
 
     }
 
-
     if pixaBayKeyWord:
         apiPixaBayCom(key_word)
         scrapDataDict['pixabay_images'] = pixaBayList[:10]
@@ -229,34 +218,30 @@ def scraper(key_word, numOfTimes, relatedKeyWord, pixaBayKeyWord, pexelKeyWord, 
         googleImages(query)
         scrapDataDict['google_images_videos']['google_images_urls'] = googleImagesList[:10]
 
-            
-
-
     if youTubeKeyWord:
         videos = scrape_video_search(query)
         scrapDataDict['google_images_videos']['youtube_urls'] = videos
-     
+
     if serpKeyWord or paaKeyWord or relatedKeyWord:
         url = f"https://www.google.com/search?hl=en&q={quote(query)}"
         url = str(quote(url)).replace('/', '%2F')
 
-
-        conn.request("GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
-
-        
+        conn.request(
+            "GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
 
         res = conn.getresponse()
         data = res.read()
         soup = BeautifulSoup(data.decode("utf-8"), "html.parser")
         if serpKeyWord:
-            scrapDataDict['google_search_results'] = parse_search_results(soup)[:10]
+            scrapDataDict['google_search_results'] = parse_search_results(soup)[
+                :10]
 
         if paaKeyWord:
-            scrapDataDict['g_questions_answers']['g_que_ans'] = parse_people_also_ask(soup)[:numOfTimes]
+            scrapDataDict['g_questions_answers']['g_que_ans'] = parse_people_also_ask(soup)[
+                :numOfTimes]
 
         if relatedKeyWord:
             scrapDataDict['related_searches'] = parse_related_search(soup)[:10]
 
     print(scrapDataDict)
     return scrapDataDict
-
