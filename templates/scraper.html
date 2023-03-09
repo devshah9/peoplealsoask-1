@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+{% endblock %}
+
+{% block style %}
+{% endblock %}
+
+{% block body %}
+<div class="container align-items-center">
+<h1>People Also Ask (GetPAA)</h1>
+<div class="mt-5 mb-5">
+    <h3>People Also Ask (PAA)</h3>
+    <div class="mt-5 mb-5">
+<!--         method="post" action="/people-also-ask"-->
+        <form class="row g-3" id="scrap-paa-form">
+            {% csrf_token %}
+            <div class="col-auto">
+                <label for="keyWord" class="form-label">Keyword</label>
+                <input type="text" class="form-control" id="keyWord" name="keyWord" placeholder="Enter Keyword for PAA" required>
+            </div>
+            <div class="col-auto">
+                <label for="numOfTimes" class="form-label">Number</label>
+                <input type="number" class="form-control" id="numOfTimes" name="numOfTimes" placeholder="Enter Number for PAA Results" required>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="relatedKeyWord" name="relatedKeyWord">
+                    <label class="form-check-label" for="relatedKeyWord">Related</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="pixaBayKeyWord" name="pixaBayKeyWord">
+                    <label class="form-check-label" for="pixaBayKeyWord">PixaBay</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="pexelKeyWord" name="pexelKeyWord">
+                    <label class="form-check-label" for="pexelKeyWord">Pexel</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="unSplashKeyWord" name="unSplashKeyWord">
+                    <label class="form-check-label" for="unSplashKeyWord">Unsplash</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="googleKeyWord" name="googleKeyWord">
+                    <label class="form-check-label" for="googleKeyWord">Google</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="youTubeKeyWord" name="youTubeKeyWord">
+                    <label class="form-check-label" for="youTubeKeyWord">YouTube</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="paaKeyWord" name="paaKeyWord">
+                    <label class="form-check-label" for="paaKeyWord">PAA</label>
+                  </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="serpKeyWord" name="serpKeyWord">
+                    <label class="form-check-label" for="serpKeyWord">Serp</label>
+                  </div>
+            </div>
+            <div class="col-bottom">
+
+                
+                <button type="submit" class="btn btn-primary mb-3">Search</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="scrap-result">
+    </div>
+    <div id="loader-main"class="loader-spin">
+        <div id="loader" class="loader"></div>
+        <p>please wait!</p>
+    </div>
+</div>
+<script src="{% static 'js/scraper.js' %}"></script>
+</div>
+{% endblock %}
