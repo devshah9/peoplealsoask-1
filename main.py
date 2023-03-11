@@ -21,15 +21,17 @@ searchVideoList = []
 
 
 def parse_search_results(soup):
-
-    results = []
-    for i in soup.find_all('div', {'class': 'g'}):
-        title = i.find('h3', {'class': 'LC20lb MBeuO DKV0Md'})
-        url = i.find('a')
-        if title and url:
-            results.append({'title': title.text, 'url': url['href']})
-    return results
-
+    try:
+        results = []
+        for i in soup.find_all('div', {'class': 'g'}):
+            title = i.find('h3', {'class': 'LC20lb MBeuO DKV0Md'})
+            url = i.find('a')
+            if title and url:
+                results.append({'title': title.text, 'url': url['href']})
+        return results
+    except Exception as e:
+        print('parse_search_results')
+        print(e)
 
 def scrape_video_search(query: str):
     try:
@@ -62,21 +64,28 @@ def scrape_video_search(query: str):
                         youtube_urls.append({'title': title, 'url': url})
         return youtube_urls
     except Exception as e:
+        print('scrape_video_search')
         print(e)
         return youtube_urls
 
 
 def parse_people_also_ask(soup):
-    new_list = []
-    for i in soup.select(".related-question-pair span"):
+    try:
+        new_list = []
+        for i in soup.select(".related-question-pair span"):
 
-        new_list.append({'que': i.get_text(strip=True), 'ans': ''})
-    return new_list
-
+            new_list.append({'que': i.get_text(strip=True), 'ans': ''})
+        return new_list
+    except Exception as e:
+        print('parse_people_also_ask')
+        print(e)
 
 def apiCaller(url, headers):
-    return json.loads(request("GET", url, headers=headers, data={}).text)
-
+    try:
+        return json.loads(request("GET", url, headers=headers, data={}).text)
+    except Exception as e:
+        print('apiCaller')
+        print(e)
 
 def apiPixaBayCom(keyWord):
     global pixaBayList
@@ -91,6 +100,7 @@ def apiPixaBayCom(keyWord):
             pixaBayList.append(apiResponse['hits'][0].get('largeImageURL', ''))
             pixaBayList.append(apiResponse['hits'][1].get('largeImageURL', ''))
     except Exception as e:
+        print('apiPixaBayCom')
         print(e)
 
 
@@ -108,61 +118,67 @@ def apiPexelsCom(keyWord):
             pexelsList.append(apiResponse['photos'][0]['src']['large'])
             pexelsList.append(apiResponse['photos'][1]['src']['large'])
     except Exception as e:
+        print('apiPexelsCom')
         print(e)
 
 
 def googleImages(query):
-    global googleImagesList
-    googleImagesList = []
+    try:
+        global googleImagesList
+        googleImagesList = []
 
-    url = f"https://www.google.com/search?hl=en&q={query}&source=lnms&tbm=isch"
-    url = str(quote(url)).replace('/', '%2F')
+        url = f"https://www.google.com/search?hl=en&q={query}&source=lnms&tbm=isch"
+        url = str(quote(url)).replace('/', '%2F')
 
-    conn.request(
-        "GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
+        conn.request(
+            "GET", f"/v2/general?url={url}&x-api-key=8a4f454e6520437fbc48feaf1aa04bdd&browser=false")
 
-    res = conn.getresponse()
-    data = res.read()
+        res = conn.getresponse()
+        data = res.read()
 
-    soup = BeautifulSoup(data.decode("utf-8"), "lxml")
-    all_script_tags = soup.select("script")
-    # https://regex101.com/r/eteSIT/1
-    matched_images_data = "".join(re.findall(
-        r"AF_initDataCallback\(([^<]+)\);", str(all_script_tags)))
-    matched_images_data_fix = json.dumps(matched_images_data)
-    matched_images_data_json = json.loads(matched_images_data_fix)
+        soup = BeautifulSoup(data.decode("utf-8"), "lxml")
+        all_script_tags = soup.select("script")
+        # https://regex101.com/r/eteSIT/1
+        matched_images_data = "".join(re.findall(
+            r"AF_initDataCallback\(([^<]+)\);", str(all_script_tags)))
+        matched_images_data_fix = json.dumps(matched_images_data)
+        matched_images_data_json = json.loads(matched_images_data_fix)
 
-    # https://regex101.com/r/VPz7f2/1
-    matched_google_image_data = re.findall(
-        r'\"b-GRID_STATE0\"(.*)sideChannel:\s?{}}', matched_images_data_json)
+        # https://regex101.com/r/VPz7f2/1
+        matched_google_image_data = re.findall(
+            r'\"b-GRID_STATE0\"(.*)sideChannel:\s?{}}', matched_images_data_json)
 
-    removed_matched_google_images_thumbnails = re.sub(
-        r'\[\"(https\:\/\/encrypted-tbn0\.gstatic\.com\/images\?.*?)\",\d+,\d+\]', "", str(matched_google_image_data))
+        removed_matched_google_images_thumbnails = re.sub(
+            r'\[\"(https\:\/\/encrypted-tbn0\.gstatic\.com\/images\?.*?)\",\d+,\d+\]', "", str(matched_google_image_data))
 
-    matched_google_full_resolution_images = re.findall(
-        r"(?:'|,),\[\"(https:|http.*?)\",\d+,\d+\]", removed_matched_google_images_thumbnails)
+        matched_google_full_resolution_images = re.findall(
+            r"(?:'|,),\[\"(https:|http.*?)\",\d+,\d+\]", removed_matched_google_images_thumbnails)
 
-    googleImagesList = [
-        bytes(bytes(img, "ascii").decode("unicode-escape"), "ascii").decode("unicode-escape") for img in matched_google_full_resolution_images
-    ]
+        googleImagesList = [
+            bytes(bytes(img, "ascii").decode("unicode-escape"), "ascii").decode("unicode-escape") for img in matched_google_full_resolution_images
+        ]
 
-    img_tags = soup.find_all('img')
-    img_urls = [img.get('data-src', None) for img in img_tags]
+        img_tags = soup.find_all('img')
+        img_urls = [img.get('data-src', None) for img in img_tags]
 
-    # Print the URLs of the images
-    for url in list(filter(None, img_urls)):
-        googleImagesList.append(url)
-
+        # Print the URLs of the images
+        for url in list(filter(None, img_urls)):
+            googleImagesList.append(url)
+    except Exception as e:
+        print('googleImages')
+        print(e)
 
 def parse_related_search(soup):
-
-    results = []
-    related_search = soup.find('div', {'class': 'y6Uyqe'})
-    a = related_search.find_all('a')
-    for i in a:
-        results.append(i.text)
-    return results
-
+    try:
+        results = []
+        related_search = soup.find('div', {'class': 'y6Uyqe'})
+        a = related_search.find_all('a')
+        for i in a:
+            results.append(i.text)
+        return results
+    except Exception  as e:
+        print('parse_related_search')
+        print(e)
 
 def apiUnSplashCom(keyWord):
     global unSplashList
@@ -177,6 +193,7 @@ def apiUnSplashCom(keyWord):
             unSplashList.append(apiResponse['results'][0]['urls']['regular'])
             unSplashList.append(apiResponse['results'][1]['urls']['regular'])
     except Exception as e:
+        print('apiUnSplashCom')
         print(e)
 
 
